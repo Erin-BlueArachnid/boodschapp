@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const {ObjectId} = require('mongodb');
 
 const {mongoose} = require('./db/mongoose');
 const {User} = require('./models/user');
@@ -31,6 +32,24 @@ app.get('/lists', (request, response) => {
     response.send({lists});
   }, (error) => {
     response.status(400).send(error);
+  });
+});
+
+app.get('/lists/:id', (request, response)=> {
+  let id = request.params.id;
+
+  if (!ObjectId.isValid(id)) {
+    return response.status(404).send({});
+  }
+
+  List.findById(id).then((doc) => {
+    if (!doc) {
+      return response.status(404).send();
+    }
+    
+    response.send({doc});
+  }).catch(()=> {
+    response.status(400).send();
   });
 });
 
