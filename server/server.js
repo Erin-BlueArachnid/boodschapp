@@ -10,15 +10,28 @@ let app = express();
 app.use(bodyParser.json());
 
 app.post('/lists', (request, response) => {
-     let newList = new List({
-       name: request.body.name
-     });
+  let newList = new List({
+    name: request.body.name
+  });
 
-    newList.save().then((doc)=> {
-      response.send(doc);
-    }, (e) => {
-      response.status(400).send(e);
-    });
+  newList.save().then((doc)=> {
+    response.send(doc);
+  }, (e) => {
+    response.status(400).send(e);
+  });
+});
+
+app.get('/lists', (request, response) => {
+  List.find().then((todos) => {
+    // You could send the todos back in an array like below,
+    // but that way you're unable to add another property: custom status code, etc.
+    // response.send(todos);
+
+    // Passing in an object and setting it equal to the array (ES6) gives more freedom
+    response.send({todos})
+  }, (error) => {
+    response.status(400).send(error);
+  });
 });
 
 app.listen(3000, () => {
