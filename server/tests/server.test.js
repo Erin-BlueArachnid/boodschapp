@@ -102,6 +102,28 @@ describe('GET /lists/:id', () => {
   });
 });
 
+describe('PATCH /lists/:id', () => {
+  it('should update a list', (done) => {
+    request(app)
+      .patch(`/lists/${lists[0]._id.toHexString()}`)
+      .send({
+        name: "Jumbo"
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.list.name).toBe("Jumbo")
+      })
+      .end(done);
+  });
+  it('should not update a list when ID is invalid', (done) => {
+    request(app)
+      .patch(`/lists/${lists[1]._id.toHexString()}`)
+      .send()
+      .expect(200)
+      .end(done)
+  });
+});
+
 describe('DELETE /lists/:id', () => {
   it('should remove a list', (done) => {
     let hexId = lists[1]._id.toHexString();
