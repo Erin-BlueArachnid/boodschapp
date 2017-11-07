@@ -101,3 +101,39 @@ describe('GET /lists/:id', () => {
       .end(done)
   });
 });
+
+describe('DELETE /lists/:id', () => {
+  it('should remove a list', (done) => {
+    let hexId = lists[1]._id.toHexString();
+
+    request(app)
+      .delete(`/lists/${hexId}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.list._id).toBe(hexId);
+      })
+      .end((error, response) => {
+        if (error) {
+          return done(error);
+        }
+        List.findById(hexId).then((list) => {
+          console.log(list);
+          expect(list).toBe(null);
+          done();
+        }).catch((error) => done(error));
+      });
+  });
+  it('should return a 404 if list wasnt found', (done) => {
+    let hexId = new ObjectID().toHexString();
+    request(app)
+      .delete(`/lists/${hexId}`)
+      .expect(404)
+      .end(done)
+  });
+  it('should return a 404 if objectId is invalid', (done) => {
+    request(app)
+      .delete('/lists/1234')
+      .expect(404)
+      .end(done)
+  });
+});
