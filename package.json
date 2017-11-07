@@ -1,0 +1,25 @@
+{
+  "name": "boodschapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Erin-BlueArachnid/boodschapp.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Erin-BlueArachnid/boodschapp/issues"
+  },
+  "homepage": "https://github.com/Erin-BlueArachnid/boodschapp#readme",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "mongodb": "^2.2.33",
+    "mongoose": "^4.13.0"
+  }
+}
