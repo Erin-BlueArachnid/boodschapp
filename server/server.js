@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectId} = require('mongodb');
@@ -52,6 +53,25 @@ app.get('/lists/:id', (request, response)=> {
   });
 });
 
+app.patch('/lists/:id', (request, response) => {
+  let id = request.params.id;
+  // the updates will be stored on the request body
+  // with pick you can specify the properties that have to be picked off
+  let body = _.pick(request.body, ['name']);
+  if (!ObjectId.isValid(id)) {
+    return response.status(404).send();
+  }
+
+  List.findByIdAndUpdate(id, {$set: body}, {new: true}).then((list) => {
+    if (!list) {
+      return response.status(404).send();
+    }
+    response.send({list});
+  }).catch((error) => {
+    response.status(400).send();
+  });
+});
+
 app.delete('/lists/:id', (request, response) => {
   let id = request.params.id;
   if (!ObjectId.isValid(id)) {
@@ -63,7 +83,6 @@ app.delete('/lists/:id', (request, response) => {
       response.status(404).send({list});
     }
     response.send({list});
-    
   }).catch((error) =>  {
     response.status(400).send(error);
   });
