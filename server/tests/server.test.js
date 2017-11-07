@@ -1,12 +1,15 @@
 const expect = require('expect');
 const request = require('supertest');
+const {ObjectID} = require('mongodb');
 
 const {app} = require('../server');
 const {List} = require('../models/list');
 
 const lists = [{
+  _id: new ObjectID(),
   name: "Aldi"
 }, {
+  _id: new ObjectID(),
   name: "Albert Heijn"
 }];
 
@@ -71,5 +74,30 @@ describe('GET /lists', () => {
         expect(response.body.lists.length).toBe(2);
       })
       .end(done);
+  });
+});
+
+describe('GET /lists/:id', () => {
+  it('should return a 404 when an invalid ID is passed', (done) => {
+    request(app)
+      .get('/lists/123')
+      .expect(404)
+      .end(done)
+  });
+  it('should return a 404 if document is not found', (done) => {
+    request(app)
+      .get(`/lists/${new ObjectID().toHexString()}`)
+      .expect(404)
+      .end(done)
+  });
+  it('should return a document', (done) => {
+    request(app)
+      // to convert a Object to a string use: toHexString method
+      .get(`/lists/${lists[0]._id.toHexString()}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.list.name).toBe(lists[0].name);
+      })
+      .end(done)
   });
 });

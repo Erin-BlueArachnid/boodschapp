@@ -37,17 +37,15 @@ app.get('/lists', (request, response) => {
 
 app.get('/lists/:id', (request, response)=> {
   let id = request.params.id;
-
   if (!ObjectId.isValid(id)) {
     return response.status(404).send({});
   }
 
-  List.findById(id).then((doc) => {
-    if (!doc) {
+  List.findById(id).then((list) => {
+    if (!list) {
       return response.status(404).send();
     }
-    
-    response.send({doc});
+    response.send({list});
   }).catch(()=> {
     response.status(400).send();
   });
