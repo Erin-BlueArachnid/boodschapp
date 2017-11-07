@@ -39,7 +39,7 @@ app.get('/lists', (request, response) => {
 app.get('/lists/:id', (request, response)=> {
   let id = request.params.id;
   if (!ObjectId.isValid(id)) {
-    return response.status(404).send({});
+    return response.status(404).send();
   }
 
   List.findById(id).then((list) => {
@@ -49,6 +49,23 @@ app.get('/lists/:id', (request, response)=> {
     response.send({list});
   }).catch(()=> {
     response.status(400).send();
+  });
+});
+
+app.delete('/lists/:id', (request, response) => {
+  let id = request.params.id;
+  if (!ObjectId.isValid(id)) {
+    return response.status(404).send();
+  }
+  List.findByIdAndRemove(id).then((list) => {
+    // setup if statement to show that nothing was deleted
+    if(!list) {
+      response.status(404).send({list});
+    }
+    response.send({list});
+    
+  }).catch((error) =>  {
+    response.status(400).send(error);
   });
 });
 
