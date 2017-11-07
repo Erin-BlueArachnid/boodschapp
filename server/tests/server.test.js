@@ -4,10 +4,19 @@ const request = require('supertest');
 const {app} = require('../server');
 const {List} = require('../models/list');
 
+const lists = [{
+  name: "Aldi"
+}, {
+  name: "Albert Heijn"
+}];
+
 // beforeEarch is a testing lifecycle method
 // runs this code before every testcase
 beforeEach((done) => {
-  List.remove({}).then(() => done());
+  List.remove({}).then(() => {
+    // return makes it possible to chain callbacks
+    return List.insertMany(lists);
+  }).then(() => done());
 });
 
 describe('POST lists', () => {
@@ -27,7 +36,7 @@ describe('POST lists', () => {
           // stop function execution after passing done with the error
           return done(error);
         }
-        List.find().then((lists) => {
+        List.find({name}).then((lists) => {
           expect(lists.length).toBe(1);
           expect(lists[0].name).toBe(name);
           // If the above statements fail, test is still going to pass, therefore add catch
@@ -46,9 +55,21 @@ describe('POST lists', () => {
           return done(error);
         }
         List.find().then((lists) => {
-          expect(lists.length).toBe(0);
+          expect(lists.length).toBe(2);
           done();
         }).catch((error) => done(error));
     });
+  });
+});
+
+describe('GET /lists', () => {
+  it('should get all lists', (done) => {
+    request(app)
+      .get('/lists')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.lists.length).toBe(2);
+      })
+      .end(done);
   });
 });

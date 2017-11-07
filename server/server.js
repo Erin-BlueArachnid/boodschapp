@@ -22,13 +22,13 @@ app.post('/lists', (request, response) => {
 });
 
 app.get('/lists', (request, response) => {
-  List.find().then((todos) => {
+  List.find().then((lists) => {
     // You could send the todos back in an array like below,
     // but that way you're unable to add another property: custom status code, etc.
     // response.send(todos);
 
     // Passing in an object and setting it equal to the array (ES6) gives more freedom
-    response.send({todos})
+    response.send({lists});
   }, (error) => {
     response.status(400).send(error);
   });
