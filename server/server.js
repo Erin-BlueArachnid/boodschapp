@@ -8,6 +8,7 @@ const {ObjectId} = require('mongodb');
 const {mongoose} = require('./db/mongoose');
 const {User} = require('./models/user');
 const {List} = require('./models/list');
+const {authenticate} = require('./middleware/authenticate')
 
 let app = express();
 const port = process.env.PORT;
@@ -103,12 +104,15 @@ app.post('/users', (request, response) => {
   user.save().then(() => {
     return user.generateAuthToken();
   }).then((token) => {
-    console.log(token);
     // when prexifing a header with x- you're creating a custom header
     response.header('x-auth', token).send(user);
   }).catch((error) => {
     response.status(400).send(error);
   });
+});
+
+app.get('/users/me', authenticate, (request, response) => {
+  response.send(request.user);
 });
 
 app.listen(port, () => {

@@ -2,6 +2,7 @@ const _ = require('lodash');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 let UserSchema = new mongoose.Schema({
   name: {
@@ -48,22 +49,55 @@ UserSchema.methods.toJSON = function () {
 };
 
 UserSchema.methods.generateAuthToken = function () {
+  // This is a instance method, which calls the individual document with the this binding
   let user = this;
   let access = 'auth';
   let token = jwt.sign({_id: user._id.toHexString(), access}, 'abc123').toString();
-  
-  console.log('token: ', token);
-  console.log('attempt 1:', user.tokens);
 
   user.tokens.push({access, token});
-  console.log('attempt 2:', user.tokens);
-  console.log('attempt 2:', token);
-  
   return user.save().then(() => {
     return token;
   });
 };
 
+UserSchema.statics.findByToken = function (token) {
+  // This is a Model method, which calls the model with the this binding
+  let User = this;
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, 'abc123');
+  } catch (error) {
+    // return new Promise((resolve, reject) => {
+    //   reject();
+    // });
+    return Promise.reject();
+  }
+  return User.findOne({
+    '_id': decoded._id,
+    'tokens.token': token,
+    'tokens.access': 'auth'
+  });
+};
+
+
+// Run this code before the document is saved
+UserSchema.pre('save', function (next) {
+  let user = this;
+
+  if (user.isModified('password')) {
+    bcrypt.genSalt(10, (error, salt) => {
+      bcrypt.hash(user.password, salt, (error, hash) => {
+        user.password = hash;
+        next();
+      });
+    });
+  } else {
+    next();
+    // move on with middleware
+  }
+});
+  
 let User = mongoose.model('User', UserSchema);
 
 module.exports = {User};
