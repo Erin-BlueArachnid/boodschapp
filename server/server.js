@@ -111,6 +111,18 @@ app.post('/users', (request, response) => {
   });
 });
 
+app.post('/users/login', (request, response) => {
+  let body = _.pick(request.body, ["email", "password"]);
+  User.findByCredentials(body.email, body.password).then((user) => {
+    // The return below keeps the chain alive. If the part below fails it will go on to the catch method.
+    return user.generateAuthToken().then((token) => {
+      response.header('x-auth', token).send(user);
+    });
+  }).catch((error) => {
+    response.status(400).send();
+  });
+});
+
 app.get('/users/me', authenticate, (request, response) => {
   response.send(request.user);
 });
