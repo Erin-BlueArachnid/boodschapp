@@ -3,24 +3,14 @@ const request = require('supertest');
 const {ObjectID} = require('mongodb');
 
 const {app} = require('../server');
+const {User} = require('../models/user');
 const {List} = require('../models/list');
-
-const lists = [{
-  _id: new ObjectID(),
-  name: "Aldi"
-}, {
-  _id: new ObjectID(),
-  name: "Albert Heijn"
-}];
+const {lists, populateLists, users, populateUsers} = require('./seed/seed');
 
 // beforeEarch is a testing lifecycle method
 // runs this code before every testcase
-beforeEach((done) => {
-  List.remove({}).then(() => {
-    // return makes it possible to chain callbacks
-    return List.insertMany(lists);
-  }).then(() => done());
-});
+beforeEach(populateUsers);
+beforeEach(populateLists);
 
 describe('POST lists', () => {
   it('should create a new list',(done) => {
@@ -139,7 +129,7 @@ describe('DELETE /lists/:id', () => {
           return done(error);
         }
         List.findById(hexId).then((list) => {
-          console.log(list);
+          // console.log(list);
           expect(list).toBe(null);
           done();
         }).catch((error) => done(error));
@@ -157,5 +147,84 @@ describe('DELETE /lists/:id', () => {
       .delete('/lists/1234')
       .expect(404)
       .end(done)
+  });
+});
+
+describe('GET /users/me', () => {
+  it('should return a user if authenticated', (done) => {
+    request(app)
+    .get('/users/me')
+    .set('x-auth', users[0].tokens[0].token)
+    .expect(200)
+    .expect((response) => {
+      expect(response.body._id).toBe(users[0]._id.toHexString());
+      expect(response.body.email).toBe(users[0].email);
+    })
+    .end(done);
+  });
+  it('should return a 401 if not authenticated', (done) => {
+    request(app)
+      .get('/users/me')
+      // .set()
+      .expect(401)
+      .expect((response) => {
+        expect(response.body).toEqual({});
+      })
+      .end(done);
+  });
+});
+
+describe('POST /users', () => {
+  it('should create a user', (done) => {
+    let name = 'Example';
+    let email = 'example@test.com';
+    let password = '123mbk!';
+
+    request(app)
+      .post('/users')
+      .send({name, email, password})
+      .expect(200)
+      .expect((response) => {
+        expect(response.headers['x-auth']).toExist();
+        expect(response.body.name).toBe(name);
+        expect(response.body._id).toExist();
+        expect(response.body.email).toBe(email);
+      })
+      .end((error) => {
+        if (error) {
+          return done();
+        }
+
+        User.findOne({email}).then((user) => {
+          expect(user).toExist();
+          // check if passwords get hashed
+          expect(user.password).toNotBe(password);
+          done();
+        })
+      })
+  });
+  
+  it('should return validation errors if request is invalid', (done) => {
+    request(app)
+      .post('/users')
+      .send({
+        name: 'Password Toshort',
+        email: 'invalidEmail',
+        password: '123!'
+      })
+      .expect(400)
+      .end(done);
+  });
+
+  it('should not create user if email is already used', (done) => {
+    request(app)
+      .post('/users')
+      .send({
+        name: 'Kopie Email',
+        email: users[0].email,
+        password: 'qwerty1234!'
+      })
+      .expect(400)
+      .end(done);
   });
 });
