@@ -200,7 +200,7 @@ describe('POST /users', () => {
           // check if passwords get hashed
           expect(user.password).toNotBe(password);
           done();
-        })
+        }).catch((error) => done(error));
       })
   });
   
@@ -226,5 +226,54 @@ describe('POST /users', () => {
       })
       .expect(400)
       .end(done);
+  });
+});
+
+describe('POST /users/login', () => {
+  it('should login a user', (done) => {
+    request(app)
+      .post('/users/login')
+      .send({
+        email: users[1].email,
+        password: users[1].password
+      })
+      .expect(200)
+      .expect((result) => {
+        expect(result.headers['x-auth']).toExist();
+      })
+      .end((error, result) => {
+        if(error) {
+          return done(error);
+        }
+
+        User.findById(users[1]._id).then((user) => {
+          expect(user.tokens[1]).toInclude({
+            access: 'auth',
+            token: result.headers['x-auth']
+          });
+          done();
+        }).catch((error) => done(error));
+    });
+  });
+  it('should reject invalid login', (done) => {
+    request(app)
+      .post('/users/login')
+      .send({
+        email: users[1].email,
+        password: users[1].password + '1'
+      })
+      .expect(400)
+      .expect((result) => {
+        expect(result.headers['x-auth']).toNotExist();
+      })
+      .end((error, result) => {
+        if(error) {
+          return done(error);
+        }
+        User.findById(users[1]._id).then((user) => {
+          expect(user.tokens.length).toBe(1);
+          done();
+        }).catch((error) => done(error));
+      })
   });
 });
