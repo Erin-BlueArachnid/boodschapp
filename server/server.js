@@ -9,12 +9,13 @@ const {mongoose} = require('./db/mongoose');
 const {User} = require('./models/user');
 const {List} = require('./models/list');
 
-const port = process.env.PORT;
 let app = express();
+const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
 app.post('/lists', (request, response) => {
+  // Create new instance of the List model
   let newList = new List({
     name: request.body.name
   });
@@ -86,6 +87,26 @@ app.delete('/lists/:id', (request, response) => {
     }
     response.send({list});
   }).catch((error) =>  {
+    response.status(400).send(error);
+  });
+});
+
+app.post('/users', (request, response) => {
+  let body = _.pick(request.body, ["name", "email", "password"])
+  let user = new User(body);
+  // let newUser = new User({
+  //   name: body.name,
+  //   email: body.email,
+  //   password: body.password
+  // });
+
+  user.save().then(() => {
+    return user.generateAuthToken();
+  }).then((token) => {
+    console.log(token);
+    // when prexifing a header with x- you're creating a custom header
+    response.header('x-auth', token).send(user);
+  }).catch((error) => {
     response.status(400).send(error);
   });
 });
