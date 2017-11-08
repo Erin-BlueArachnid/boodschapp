@@ -15,10 +15,11 @@ const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-app.post('/lists', (request, response) => {
+app.post('/lists', authenticate, (request, response) => {
   // Create new instance of the List model
   let newList = new List({
-    name: request.body.name
+    name: request.body.name,
+    _creator: request.user._id
   });
 
   newList.save().then((doc)=> {
@@ -28,8 +29,10 @@ app.post('/lists', (request, response) => {
   });
 });
 
-app.get('/lists', (request, response) => {
-  List.find().then((lists) => {
+app.get('/lists', authenticate, (request, response) => {
+  List.find({
+    _creator: request.user._id
+  }).then((lists) => {
     // You could send the todos back in an array like below,
     // but that way you're unable to add another property: custom status code, etc.
     // response.send(todos);
@@ -41,13 +44,16 @@ app.get('/lists', (request, response) => {
   });
 });
 
-app.get('/lists/:id', (request, response)=> {
+app.get('/lists/:id', authenticate, (request, response)=> {
   let id = request.params.id;
   if (!ObjectId.isValid(id)) {
     return response.status(404).send();
   }
 
-  List.findById(id).then((list) => {
+  List.findOne({
+    _id: id,
+    _creator: request.user._id
+  }).then((list) => {
     if (!list) {
       return response.status(404).send();
     }
@@ -57,7 +63,7 @@ app.get('/lists/:id', (request, response)=> {
   });
 });
 
-app.patch('/lists/:id', (request, response) => {
+app.patch('/lists/:id', authenticate, (request, response) => {
   let id = request.params.id;
   // the updates will be stored on the request body
   // with pick you can specify the properties that have to be picked off
@@ -66,7 +72,7 @@ app.patch('/lists/:id', (request, response) => {
     return response.status(404).send();
   }
 
-  List.findByIdAndUpdate(id, {$set: body}, {new: true}).then((list) => {
+  List.findOneAndUpdate({_id: id, _creator: request.user._id}, {$set: body}, {new: true}).then((list) => {
     if (!list) {
       return response.status(404).send();
     }
@@ -76,12 +82,17 @@ app.patch('/lists/:id', (request, response) => {
   });
 });
 
-app.delete('/lists/:id', (request, response) => {
+app.delete('/lists/:id', authenticate, (request, response) => {
   let id = request.params.id;
   if (!ObjectId.isValid(id)) {
     return response.status(404).send();
   }
-  List.findByIdAndRemove(id).then((list) => {
+  // List.findByIdAndRemove({
+  // You not only want to find by ID but also by creator
+  List.findOneAndRemove({
+    _id: id,
+    _creator: request.user._id
+  }).then((list) => {
     // setup if statement to show that nothing was deleted
     if(!list) {
       response.status(404).send({list});

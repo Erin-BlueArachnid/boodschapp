@@ -3,14 +3,6 @@ const {List} = require('./../../models/list');
 const {User} = require('./../../models/user');
 const jwt = require('jsonwebtoken');
 
-const lists = [{
-  _id: new ObjectID(),
-  name: "Aldi"
-}, {
-  _id: new ObjectID(),
-  name: "Albert Heijn"
-}];
-
 const userOneID = new ObjectID();
 const userTwoID = new ObjectID();
 const users = [{
@@ -32,6 +24,16 @@ const users = [{
     token: jwt.sign({_id: userTwoID, access: 'auth'}, 'abc123').toString()
   }]
 }]
+
+const lists = [{
+  _id: new ObjectID(),
+  name: "Aldi",
+  _creator: userOneID
+}, {
+  _id: new ObjectID(),
+  name: "Albert Heijn",
+  _creator: userTwoID
+}];
 
 const populateLists = (done) => {
   List.remove({}).then(() => {

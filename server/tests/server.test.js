@@ -17,6 +17,7 @@ describe('POST lists', () => {
     let name = "Dirk";
     request(app)
       .post('/lists')
+      .set('x-auth', users[0].tokens[0].token)
       // Object below gets conferted to JSON by supertest
       .send({name})
       .expect(200)
@@ -41,6 +42,7 @@ describe('POST lists', () => {
   it('should not create list with invalid data', (done) => {
     request(app)
       .post('/lists')
+      .set('x-auth', users[0].tokens[0].token)
       .send({})
       .expect(400)
       .end((error, response) => {
@@ -59,35 +61,47 @@ describe('GET /lists', () => {
   it('should get all lists', (done) => {
     request(app)
       .get('/lists')
+      .set('x-auth', users[0].tokens[0].token)
       .expect(200)
       .expect((response) => {
-        expect(response.body.lists.length).toBe(2);
+        expect(response.body.lists.length).toBe(1);
       })
       .end(done);
   });
 });
 
 describe('GET /lists/:id', () => {
-  it('should return a 404 when an invalid ID is passed', (done) => {
-    request(app)
-      .get('/lists/123')
-      .expect(404)
-      .end(done)
-  });
-  it('should return a 404 if document is not found', (done) => {
-    request(app)
-      .get(`/lists/${new ObjectID().toHexString()}`)
-      .expect(404)
-      .end(done)
-  });
   it('should return a document', (done) => {
     request(app)
       // to convert a Object to a string use: toHexString method
       .get(`/lists/${lists[0]._id.toHexString()}`)
+      .set('x-auth', users[0].tokens[0].token)
       .expect(200)
       .expect((response) => {
         expect(response.body.list.name).toBe(lists[0].name);
       })
+      .end(done)
+  });
+  it('should not return a list document created by other user', (done) => {
+    request(app)
+      // to convert a Object to a string use: toHexString method
+      .get(`/lists/${lists[1]._id.toHexString()}`)
+      .set('x-auth', users[0].tokens[0].token)
+      .expect(404)
+      .end(done)
+  });
+  it('should return a 404 when an invalid ID is passed', (done) => {
+    request(app)
+      .get('/lists/123')
+      .set('x-auth', users[0].tokens[0].token)
+      .expect(404)
+      .end(done)
+  });
+  it('should return a 404 if list is not found', (done) => {
+    request(app)
+      .get(`/lists/${new ObjectID().toHexString()}`)
+      .set('x-auth', users[0].tokens[0].token)
+      .expect(404)
       .end(done)
   });
 });
@@ -96,6 +110,7 @@ describe('PATCH /lists/:id', () => {
   it('should update a list', (done) => {
     request(app)
       .patch(`/lists/${lists[0]._id.toHexString()}`)
+      .set('x-auth', users[0].tokens[0].token)
       .send({
         name: "Jumbo"
       })
@@ -105,48 +120,82 @@ describe('PATCH /lists/:id', () => {
       })
       .end(done);
   });
+  it('should not update a list created by other user', (done) => {
+    request(app)
+      .patch(`/lists/${lists[0]._id.toHexString()}`)
+      .set('x-auth', users[1].tokens[0].token)
+      .send({
+        name: "Jumbo"
+      })
+      .expect(404)
+      .end(done);
+  });
   it('should not update a list when ID is invalid', (done) => {
     request(app)
       .patch(`/lists/${lists[1]._id.toHexString()}`)
+      .set('x-auth', users[1].tokens[0].token)
       .send()
       .expect(200)
       .end(done)
   });
 });
 
-describe('DELETE /lists/:id', () => {
-  it('should remove a list', (done) => {
-    let hexId = lists[1]._id.toHexString();
-
+describe('DELETE /todos/:id', () => {
+  it('should delete a list', (done) => {
+    let hexID = lists[1]._id.toHexString();
+    
     request(app)
-      .delete(`/lists/${hexId}`)
+      .delete(`/todos/${hexID}`)
+      .set('x-auth', users[1].tokens[0].token)
       .expect(200)
       .expect((response) => {
-        expect(response.body.list._id).toBe(hexId);
+        expect(response.body.list._id).toBe(hexID);
       })
       .end((error, response) => {
         if (error) {
           return done(error);
         }
-        List.findById(hexId).then((list) => {
-          // console.log(list);
-          expect(list).toBe(null);
+        List.findById(hexID).then((list) => {
+          expect(list).toNotExist();
           done();
         }).catch((error) => done(error));
-      });
+      })
   });
-  it('should return a 404 if list wasnt found', (done) => {
+  
+  it('should delete a list', (done) => {
+    let hexID = lists[0]._id.toHexString();
+    
+    request(app)
+      .delete(`/todos/${hexID}`)
+      .set('x-auth', users[1].tokens[0].token)
+      .expect(404)
+      .end((error, response) => {
+        if (error) {
+          return done(error);
+        }
+        List.findById(hexID).then((list) => {
+          expect(list).toExist();
+          done();
+        }).catch((error) => done(error));
+      })
+  });
+  
+  it('should return 404, if list not found', (done) => {
+    // make sure you get a 404 back
     let hexId = new ObjectID().toHexString();
+    
     request(app)
-      .delete(`/lists/${hexId}`)
+      .delete(`/todos/${hexId}`)
+      .set('x-auth', users[1].tokens[0].token)
       .expect(404)
       .end(done)
   });
-  it('should return a 404 if objectId is invalid', (done) => {
+  it('should return 404, if objectID is invalid', (done) => {
     request(app)
-      .delete('/lists/1234')
-      .expect(404)
-      .end(done)
+    .delete(`/todos/123`)
+    .set('x-auth', users[1].tokens[0].token)
+    .expect(404)
+    .end(done)
   });
 });
 
@@ -275,5 +324,23 @@ describe('POST /users/login', () => {
           done();
         }).catch((error) => done(error));
       })
+  });
+});
+
+describe('DELETE /users/me/token', () => {
+  it('should remove auth token on logout', (done) => {
+    request(app)
+      .delete('/users/me/token')
+      .set('x-auth', users[0].tokens[0].token)
+      .expect(200)
+      .end((error, result) => {
+        if (error) {
+          return done(error);
+        }
+        User.findById(users[0]._id).then((user) => {
+          expect(user.tokens.length).toBe(0);
+          done();
+        }).catch((error) => done(error));
+      });
   });
 });

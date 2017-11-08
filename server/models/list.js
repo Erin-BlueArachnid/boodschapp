@@ -6,6 +6,10 @@ let List = mongoose.model('List', {
     required: true,
     minLength: 1,
     trim: true
+  },
+  _creator: {
+    require: true,
+    type: mongoose.Schema.Types.ObjectId
   }
 });
 
