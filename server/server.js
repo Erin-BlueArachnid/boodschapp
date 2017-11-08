@@ -127,6 +127,22 @@ app.get('/users/me', authenticate, (request, response) => {
   response.send(request.user);
 });
 
+app.delete('/users/me/token', authenticate, (request, response) => {
+  request.user.removeToken(request.token).then(() => {
+    response.status(200).send();
+  }, () => {
+    response.status(400).send();
+  });
+});
+
+app.delete('/users/me/token', authenticate, (request, response) => {
+  request.user.removeToken(request.token).then(() => {
+    response.status(200).send();
+  }, () => {
+    response.status(400).send();
+  });
+});
+
 app.listen(port, () => {
   console.log(`Started on port ${port}`);
 });

@@ -115,7 +115,17 @@ UserSchema.pre('save', function (next) {
     // move on with middleware
   }
 });
-  
+
+UserSchema.methods.removeToken = function (token) {
+  // pull of item from array that is equal to input
+  let user = this;
+  return user.update({
+    $pull: {
+      tokens: {token}
+    }
+  });
+};
+
 let User = mongoose.model('User', UserSchema);
 
 module.exports = {User};
